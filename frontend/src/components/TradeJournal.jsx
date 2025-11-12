@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
+<<<<<<< HEAD
 import axios from "axios";
+=======
+>>>>>>> 22d588f1441daecb5784d63a1f084b0589ead99c
 
 const TradeJournal = () => {
   const [trades, setTrades] = useState([]);
@@ -30,6 +33,7 @@ const TradeJournal = () => {
   };
 
   const handleSubmit = async (e) => {
+<<<<<<< HEAD
   e.preventDefault();
 
   try {
@@ -68,6 +72,24 @@ const TradeJournal = () => {
   }
 };
 
+=======
+    e.preventDefault();
+    try {
+      await api.post('/trades/add', formData);
+      setFormData({
+        symbol: '',
+        trade_type: 'BUY',
+        quantity: '',
+        price: '',
+        notes: ''
+      });
+      setShowForm(false);
+      fetchTrades();
+    } catch (error) {
+      console.error('Failed to add trade:', error);
+    }
+  };
+>>>>>>> 22d588f1441daecb5784d63a1f084b0589ead99c
 
   const handleCSVUpload = async (e) => {
     const file = e.target.files[0];

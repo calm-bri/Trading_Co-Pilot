@@ -6,10 +6,15 @@ const AlertsPanel = () => {
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     symbol: '',
+<<<<<<< HEAD
     alert_type: 'price_above',
     threshold_value: '',
     condition: 'above',
     message: ''
+=======
+    condition: 'ABOVE',
+    target_price: ''
+>>>>>>> 22d588f1441daecb5784d63a1f084b0589ead99c
   });
   const [loading, setLoading] = useState(true);
 
@@ -30,6 +35,7 @@ const AlertsPanel = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+<<<<<<< HEAD
 
     const payload = {
       symbol: formData.symbol.trim().toUpperCase(),
@@ -49,11 +55,23 @@ const AlertsPanel = () => {
         threshold_value: '',
         condition: 'above',
         message: ''
+=======
+    try {
+      await api.post('/alerts/create', formData);
+      setFormData({
+        symbol: '',
+        condition: 'ABOVE',
+        target_price: ''
+>>>>>>> 22d588f1441daecb5784d63a1f084b0589ead99c
       });
       setShowForm(false);
       fetchAlerts();
     } catch (error) {
+<<<<<<< HEAD
       console.error('Failed to create alert:', error.response?.data || error);
+=======
+      console.error('Failed to create alert:', error);
+>>>>>>> 22d588f1441daecb5784d63a1f084b0589ead99c
     }
   };
 
@@ -86,12 +104,17 @@ const AlertsPanel = () => {
         <div className="bg-white p-6 rounded-lg shadow-md mb-8">
           <h2 className="text-xl font-semibold mb-4">Create New Alert</h2>
           <form onSubmit={handleSubmit}>
+<<<<<<< HEAD
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+=======
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+>>>>>>> 22d588f1441daecb5784d63a1f084b0589ead99c
               <div>
                 <label className="block text-gray-700 text-sm font-bold mb-2">Symbol</label>
                 <input
                   type="text"
                   value={formData.symbol}
+<<<<<<< HEAD
                   onChange={(e) =>
                     setFormData({ ...formData, symbol: e.target.value.toUpperCase() })
                   }
@@ -100,10 +123,18 @@ const AlertsPanel = () => {
                 />
               </div>
 
+=======
+                  onChange={(e) => setFormData({...formData, symbol: e.target.value.toUpperCase()})}
+                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                  required
+                />
+              </div>
+>>>>>>> 22d588f1441daecb5784d63a1f084b0589ead99c
               <div>
                 <label className="block text-gray-700 text-sm font-bold mb-2">Condition</label>
                 <select
                   value={formData.condition}
+<<<<<<< HEAD
                   onChange={(e) =>
                     setFormData({
                       ...formData,
@@ -119,11 +150,21 @@ const AlertsPanel = () => {
                 </select>
               </div>
 
+=======
+                  onChange={(e) => setFormData({...formData, condition: e.target.value})}
+                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                >
+                  <option value="ABOVE">Price Above</option>
+                  <option value="BELOW">Price Below</option>
+                </select>
+              </div>
+>>>>>>> 22d588f1441daecb5784d63a1f084b0589ead99c
               <div>
                 <label className="block text-gray-700 text-sm font-bold mb-2">Target Price</label>
                 <input
                   type="number"
                   step="0.01"
+<<<<<<< HEAD
                   value={formData.threshold_value}
                   onChange={(e) =>
                     setFormData({ ...formData, threshold_value: e.target.value })
@@ -149,6 +190,19 @@ const AlertsPanel = () => {
               <button
                 type="submit"
                 className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none"
+=======
+                  value={formData.target_price}
+                  onChange={(e) => setFormData({...formData, target_price: parseFloat(e.target.value)})}
+                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                  required
+                />
+              </div>
+            </div>
+            <div className="mt-4">
+              <button
+                type="submit"
+                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+>>>>>>> 22d588f1441daecb5784d63a1f084b0589ead99c
               >
                 Create Alert
               </button>
@@ -161,6 +215,7 @@ const AlertsPanel = () => {
         <table className="w-full">
           <thead className="bg-gray-50">
             <tr>
+<<<<<<< HEAD
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Symbol
               </th>
@@ -179,11 +234,20 @@ const AlertsPanel = () => {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Actions
               </th>
+=======
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Symbol</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Condition</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Target Price</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+>>>>>>> 22d588f1441daecb5784d63a1f084b0589ead99c
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {alerts.map((alert) => (
               <tr key={alert.id}>
+<<<<<<< HEAD
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   {alert.symbol}
                 </td>
@@ -201,6 +265,15 @@ const AlertsPanel = () => {
                         : 'bg-red-100 text-red-800'
                     }`}
                   >
+=======
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{alert.symbol}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{alert.condition}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${alert.target_price}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <span className={`px-2 py-1 text-xs rounded ${
+                    alert.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                  }`}>
+>>>>>>> 22d588f1441daecb5784d63a1f084b0589ead99c
                     {alert.is_active ? 'Active' : 'Triggered'}
                   </span>
                 </td>
@@ -219,7 +292,10 @@ const AlertsPanel = () => {
             ))}
           </tbody>
         </table>
+<<<<<<< HEAD
 
+=======
+>>>>>>> 22d588f1441daecb5784d63a1f084b0589ead99c
         {alerts.length === 0 && (
           <div className="text-center py-8 text-gray-500">
             No alerts created yet. Create your first alert above.

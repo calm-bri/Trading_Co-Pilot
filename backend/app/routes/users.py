@@ -34,7 +34,11 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = 
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+<<<<<<< HEAD
     access_token = create_access_token(data={"sub": str(user.id)})
+=======
+    access_token = create_access_token(data={"sub": user.username})
+>>>>>>> 22d588f1441daecb5784d63a1f084b0589ead99c
     return {"access_token": access_token, "token_type": "bearer"}
 
 async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
