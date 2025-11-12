@@ -1,11 +1,7 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-<<<<<<< HEAD
 from app.core.database import Base
-=======
-from . import Base
->>>>>>> 22d588f1441daecb5784d63a1f084b0589ead99c
 
 class Trade(Base):
     __tablename__ = "trades"

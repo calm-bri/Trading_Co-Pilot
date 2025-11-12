@@ -1,19 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import api from '../services/api';
-<<<<<<< HEAD
+import React, { useState, useEffect } from "react";
+import api from "../services/api";
 import axios from "axios";
-=======
->>>>>>> 22d588f1441daecb5784d63a1f084b0589ead99c
 
 const TradeJournal = () => {
   const [trades, setTrades] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
-    symbol: '',
-    trade_type: 'BUY',
-    quantity: '',
-    price: '',
-    notes: ''
+    symbol: "",
+    trade_type: "BUY",
+    quantity: "",
+    price: "",
+    notes: "",
   });
   const [loading, setLoading] = useState(true);
 
@@ -21,94 +18,83 @@ const TradeJournal = () => {
     fetchTrades();
   }, []);
 
+  // ✅ Fetch all trades for logged-in user
   const fetchTrades = async () => {
     try {
-      const response = await api.get('/trades/');
+      const token = localStorage.getItem("token");
+      const response = await axios.get("http://localhost:8000/api/trades/", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       setTrades(response.data);
     } catch (error) {
-      console.error('Failed to fetch trades:', error);
+      console.error("Failed to fetch trades:", error.response?.data || error);
     } finally {
       setLoading(false);
     }
   };
 
+  // ✅ Add new trade
   const handleSubmit = async (e) => {
-<<<<<<< HEAD
-  e.preventDefault();
-
-  try {
-    const token = localStorage.getItem("token"); // JWT stored at login
-
-    await axios.post(
-      "http://localhost:8000/api/trades/", // ✅ correct backend endpoint
-      {
-        symbol: formData.symbol,
-        trade_type: formData.trade_type.toLowerCase(), // backend expects lowercase ('buy'/'sell')
-        quantity: parseFloat(formData.quantity),
-        price: parseFloat(formData.price),
-        notes: formData.notes,
-      },
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`, // ✅ required for FastAPI auth
-        },
-      }
-    );
-
-    // Reset form
-    setFormData({
-      symbol: "",
-      trade_type: "BUY",
-      quantity: "",
-      price: "",
-      notes: "",
-    });
-
-    setShowForm(false);
-    fetchTrades(); // refresh the trade list
-  } catch (error) {
-    console.error("Failed to add trade:", error.response?.data || error);
-  }
-};
-
-=======
     e.preventDefault();
+
     try {
-      await api.post('/trades/add', formData);
+      const token = localStorage.getItem("token");
+
+      await axios.post(
+        "http://localhost:8000/api/trades/",
+        {
+          symbol: formData.symbol.trim().toUpperCase(),
+          trade_type: formData.trade_type.toLowerCase(), // backend expects lowercase ('buy'/'sell')
+          quantity: parseFloat(formData.quantity),
+          price: parseFloat(formData.price),
+          notes: formData.notes,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      // Reset form and refresh
       setFormData({
-        symbol: '',
-        trade_type: 'BUY',
-        quantity: '',
-        price: '',
-        notes: ''
+        symbol: "",
+        trade_type: "BUY",
+        quantity: "",
+        price: "",
+        notes: "",
       });
       setShowForm(false);
       fetchTrades();
     } catch (error) {
-      console.error('Failed to add trade:', error);
+      console.error("Failed to add trade:", error.response?.data || error);
     }
   };
->>>>>>> 22d588f1441daecb5784d63a1f084b0589ead99c
 
+  // ✅ Upload CSV
   const handleCSVUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    const formData = new FormData();
-    formData.append('file', file);
+    const formDataObj = new FormData();
+    formDataObj.append("file", file);
 
     try {
-      await api.post('/trades/upload-csv', formData, {
+      const token = localStorage.getItem("token");
+      await axios.post("http://localhost:8000/api/trades/upload-csv", formDataObj, {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`,
         },
       });
       fetchTrades();
-      alert('CSV uploaded successfully!');
+      alert("CSV uploaded successfully!");
     } catch (error) {
-      console.error('Failed to upload CSV:', error);
-      alert('Failed to upload CSV');
+      console.error("Failed to upload CSV:", error);
+      alert("Failed to upload CSV");
     }
   };
 
@@ -125,7 +111,7 @@ const TradeJournal = () => {
             onClick={() => setShowForm(!showForm)}
             className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
           >
-            {showForm ? 'Cancel' : 'Add Trade'}
+            {showForm ? "Cancel" : "Add Trade"}
           </button>
           <label className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 cursor-pointer">
             Upload CSV
@@ -145,61 +131,95 @@ const TradeJournal = () => {
           <form onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-gray-700 text-sm font-bold mb-2">Symbol</label>
+                <label className="block text-gray-700 text-sm font-bold mb-2">
+                  Symbol
+                </label>
                 <input
                   type="text"
                   value={formData.symbol}
-                  onChange={(e) => setFormData({...formData, symbol: e.target.value.toUpperCase()})}
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      symbol: e.target.value.toUpperCase(),
+                    })
+                  }
+                  className="shadow border rounded w-full py-2 px-3 text-gray-700 focus:outline-none"
                   required
                 />
               </div>
+
               <div>
-                <label className="block text-gray-700 text-sm font-bold mb-2">Trade Type</label>
+                <label className="block text-gray-700 text-sm font-bold mb-2">
+                  Trade Type
+                </label>
                 <select
                   value={formData.trade_type}
-                  onChange={(e) => setFormData({...formData, trade_type: e.target.value})}
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                  onChange={(e) =>
+                    setFormData({ ...formData, trade_type: e.target.value })
+                  }
+                  className="shadow border rounded w-full py-2 px-3 text-gray-700 focus:outline-none"
                 >
                   <option value="BUY">BUY</option>
                   <option value="SELL">SELL</option>
                 </select>
               </div>
+
               <div>
-                <label className="block text-gray-700 text-sm font-bold mb-2">Quantity</label>
+                <label className="block text-gray-700 text-sm font-bold mb-2">
+                  Quantity
+                </label>
                 <input
                   type="number"
                   value={formData.quantity}
-                  onChange={(e) => setFormData({...formData, quantity: parseInt(e.target.value)})}
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      quantity: parseInt(e.target.value),
+                    })
+                  }
+                  className="shadow border rounded w-full py-2 px-3 text-gray-700 focus:outline-none"
                   required
                 />
               </div>
+
               <div>
-                <label className="block text-gray-700 text-sm font-bold mb-2">Price</label>
+                <label className="block text-gray-700 text-sm font-bold mb-2">
+                  Price
+                </label>
                 <input
                   type="number"
                   step="0.01"
                   value={formData.price}
-                  onChange={(e) => setFormData({...formData, price: parseFloat(e.target.value)})}
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      price: parseFloat(e.target.value),
+                    })
+                  }
+                  className="shadow border rounded w-full py-2 px-3 text-gray-700 focus:outline-none"
                   required
                 />
               </div>
             </div>
+
             <div className="mt-4">
-              <label className="block text-gray-700 text-sm font-bold mb-2">Notes (Optional)</label>
+              <label className="block text-gray-700 text-sm font-bold mb-2">
+                Notes (Optional)
+              </label>
               <textarea
                 value={formData.notes}
-                onChange={(e) => setFormData({...formData, notes: e.target.value})}
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                onChange={(e) =>
+                  setFormData({ ...formData, notes: e.target.value })
+                }
+                className="shadow border rounded w-full py-2 px-3 text-gray-700 focus:outline-none"
                 rows="3"
               />
             </div>
+
             <div className="mt-4">
               <button
                 type="submit"
-                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none"
               >
                 Add Trade
               </button>
@@ -212,35 +232,60 @@ const TradeJournal = () => {
         <table className="w-full">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Symbol</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Symbol
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Type
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Quantity
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Price
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Date
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Notes
+              </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {trades.map((trade) => (
               <tr key={trade.id}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{trade.symbol}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  {trade.symbol}
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  <span className={`px-2 py-1 text-xs rounded ${
-                    trade.trade_type === 'BUY' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                  }`}>
-                    {trade.trade_type}
+                  <span
+                    className={`px-2 py-1 text-xs rounded ${
+                      trade.trade_type === "BUY"
+                        ? "bg-green-100 text-green-800"
+                        : "bg-red-100 text-red-800"
+                    }`}
+                  >
+                    {trade.trade_type.toUpperCase()}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{trade.quantity}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${trade.price}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {trade.quantity}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  ${trade.price}
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {new Date(trade.timestamp).toLocaleDateString()}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{trade.notes || '-'}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {trade.notes || "-"}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
+
         {trades.length === 0 && (
           <div className="text-center py-8 text-gray-500">
             No trades recorded yet. Add your first trade above.

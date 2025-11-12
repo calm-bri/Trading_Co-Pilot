@@ -7,11 +7,9 @@ class Settings(BaseSettings):
 
     # Security
     secret_key: str
-<<<<<<< HEAD
-    algorithm: str 
-=======
+
     algorithm: str = "HS256"
->>>>>>> 22d588f1441daecb5784d63a1f084b0589ead99c
+
     access_token_expire_minutes: int = 30
 
     # CORS
