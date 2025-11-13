@@ -2,6 +2,7 @@ import numpy as np
 from typing import List, Dict, Any
 
 class RiskManagement:
+    
     @staticmethod
     def calculate_max_drawdown(prices: List[float]) -> Dict[str, Any]:
         if len(prices) < 2:
@@ -63,6 +64,43 @@ class RiskManagement:
             "win_rate": RiskManagement.calculate_win_rate(trades),
             "total_return": (prices[-1] - prices[0]) / prices[0] if prices else 0,
             "volatility": float(np.std(returns)) * np.sqrt(252) if returns else 0,
+        }
+        
+    def calculate_risk_metrics(self, returns: List[float]) -> Dict[str, float]:
+        """
+        Simple risk metric wrapper to maintain compatibility
+        with /analytics/risk-metrics endpoint.
+        Expects a list of P&L or price differences.
+        """
+
+        if len(returns) < 2:
+            return {
+                "max_drawdown": 0,
+                "sharpe_ratio": 0,
+                "volatility": 0,
+                "var_95": 0,
+            }
+
+        # Convert returns to numpy
+        r = np.array(returns)
+
+        sharpe = self.calculate_sharpe_ratio(r)
+        volatility = float(np.std(r) * np.sqrt(252))
+
+        # Value-at-Risk (95%) using normal distribution
+        var_95 = float(np.percentile(r, 5))
+
+        # To compute drawdown we need a price series
+        # So reconstruct a pseudo price series (cumulative product)
+        prices = (1 + r).cumprod()
+
+        max_dd = self.calculate_max_drawdown(prices)["max_drawdown"]
+
+        return {
+            "max_drawdown": float(max_dd),
+            "sharpe_ratio": float(sharpe),
+            "volatility": float(volatility),
+            "var_95": float(var_95),
         }
 
 risk_management = RiskManagement()

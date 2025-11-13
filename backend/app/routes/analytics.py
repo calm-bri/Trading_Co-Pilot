@@ -136,3 +136,44 @@ async def get_risk_metrics(
         "volatility": round(metrics.get('volatility', 0), 4),
         "var_95": round(metrics.get('var_95', 0), 4)
     }
+
+@router.get("/series/{symbol}")
+async def get_candle_series(
+    symbol: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Returns OHLCV time-series for Plotly candlestick charts.
+    Works with Yahoo Finance DataFetcher.
+    """
+    fetcher = DataFetcher()
+
+    try:
+        df = await fetcher.get_historical_data(symbol)
+
+        if df.empty:
+            return {"symbol": symbol, "series": []}
+
+        df["date"] = df["date"].astype(str)
+
+        series = [
+            {
+                "date": row["date"],
+                "open": float(row["open"]),
+                "high": float(row["high"]),
+                "low": float(row["low"]),
+                "close": float(row["close"]),
+                "volume": float(row["volume"]),
+            }
+            for _, row in df.iterrows()
+        ]
+
+        return {"symbol": symbol, "series": series}
+
+    except Exception as e:
+        print("❌ ERROR in /series:", e)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error fetching OHLCV series: {str(e)}"
+        )

@@ -8,6 +8,7 @@ from app.models import User, Alert
 from app.schemas.alert import Alert as AlertSchema, AlertCreate
 from app.services.data_fetcher import DataFetcher
 from app.services.sentiment_analysis import SentimentAnalysis
+from app.services.alert_checker import check_and_trigger_alerts
 
 router = APIRouter()
 

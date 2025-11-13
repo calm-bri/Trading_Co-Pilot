@@ -1,15 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import api from '../services/api';
+import React, { useState, useEffect } from "react";
+import api from "../services/api";
 
 const AlertsPanel = () => {
   const [alerts, setAlerts] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
-    symbol: '',
-    alert_type: 'price_above',
-    threshold_value: '',
-    condition: 'above',
-    message: '',
+    symbol: "",
+    condition: "above",
+    threshold_value: "",
+    message: "",
   });
   const [loading, setLoading] = useState(true);
 
@@ -19,10 +18,10 @@ const AlertsPanel = () => {
 
   const fetchAlerts = async () => {
     try {
-      const response = await api.get('/alerts/active');
+      const response = await api.get("/alerts/active");
       setAlerts(response.data);
     } catch (error) {
-      console.error('Failed to fetch alerts:', error);
+      console.error("Failed to fetch alerts:", error);
     } finally {
       setLoading(false);
     }
@@ -33,7 +32,7 @@ const AlertsPanel = () => {
 
     const payload = {
       symbol: formData.symbol.trim().toUpperCase(),
-      alert_type: formData.condition === 'above' ? 'price_above' : 'price_below',
+      alert_type: formData.condition === "above" ? "price_above" : "price_below",
       threshold_value: Number(formData.threshold_value),
       condition: formData.condition,
       message:
@@ -42,18 +41,19 @@ const AlertsPanel = () => {
     };
 
     try {
-      await api.post('/alerts/', payload);
+      await api.post("/alerts/", payload);
+
       setFormData({
-        symbol: '',
-        alert_type: 'price_above',
-        threshold_value: '',
-        condition: 'above',
-        message: '',
+        symbol: "",
+        condition: "above",
+        threshold_value: "",
+        message: "",
       });
+
       setShowForm(false);
       fetchAlerts();
     } catch (error) {
-      console.error('Failed to create alert:', error.response?.data || error);
+      console.error("Failed to create alert:", error.response?.data || error);
     }
   };
 
@@ -62,13 +62,11 @@ const AlertsPanel = () => {
       await api.delete(`/alerts/${alertId}`);
       fetchAlerts();
     } catch (error) {
-      console.error('Failed to delete alert:', error);
+      console.error("Failed to delete alert:", error);
     }
   };
 
-  if (loading) {
-    return <div className="text-center">Loading alerts...</div>;
-  }
+  if (loading) return <div className="text-center">Loading alerts...</div>;
 
   return (
     <div>
@@ -78,38 +76,46 @@ const AlertsPanel = () => {
           onClick={() => setShowForm(!showForm)}
           className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
         >
-          {showForm ? 'Cancel' : 'Create Alert'}
+          {showForm ? "Cancel" : "Create Alert"}
         </button>
       </div>
 
       {showForm && (
         <div className="bg-white p-6 rounded-lg shadow-md mb-8">
           <h2 className="text-xl font-semibold mb-4">Create New Alert</h2>
+
           <form onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {/* Symbol */}
               <div>
-                <label className="block text-gray-700 text-sm font-bold mb-2">Symbol</label>
+                <label className="block text-gray-700 text-sm font-bold mb-2">
+                  Symbol
+                </label>
                 <input
                   type="text"
                   value={formData.symbol}
                   onChange={(e) =>
-                    setFormData({ ...formData, symbol: e.target.value.toUpperCase() })
+                    setFormData({
+                      ...formData,
+                      symbol: e.target.value.toUpperCase(),
+                    })
                   }
                   className="shadow border rounded w-full py-2 px-3 text-gray-700 focus:outline-none"
                   required
                 />
               </div>
 
+              {/* Condition */}
               <div>
-                <label className="block text-gray-700 text-sm font-bold mb-2">Condition</label>
+                <label className="block text-gray-700 text-sm font-bold mb-2">
+                  Condition
+                </label>
                 <select
                   value={formData.condition}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
                       condition: e.target.value,
-                      alert_type:
-                        e.target.value === 'above' ? 'price_above' : 'price_below',
                     })
                   }
                   className="shadow border rounded w-full py-2 px-3 text-gray-700 focus:outline-none"
@@ -119,26 +125,40 @@ const AlertsPanel = () => {
                 </select>
               </div>
 
+              {/* Threshold */}
               <div>
-                <label className="block text-gray-700 text-sm font-bold mb-2">Target Price</label>
+                <label className="block text-gray-700 text-sm font-bold mb-2">
+                  Target Price
+                </label>
                 <input
                   type="number"
                   step="0.01"
                   value={formData.threshold_value}
                   onChange={(e) =>
-                    setFormData({ ...formData, threshold_value: e.target.value })
+                    setFormData({
+                      ...formData,
+                      threshold_value: e.target.value,
+                    })
                   }
                   className="shadow border rounded w-full py-2 px-3 text-gray-700 focus:outline-none"
                   required
                 />
               </div>
 
+              {/* Message */}
               <div>
-                <label className="block text-gray-700 text-sm font-bold mb-2">Message (optional)</label>
+                <label className="block text-gray-700 text-sm font-bold mb-2">
+                  Message (optional)
+                </label>
                 <input
                   type="text"
                   value={formData.message}
-                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      message: e.target.value,
+                    })
+                  }
                   className="shadow border rounded w-full py-2 px-3 text-gray-700 focus:outline-none"
                   placeholder="Custom message"
                 />
@@ -157,31 +177,53 @@ const AlertsPanel = () => {
         </div>
       )}
 
+      {/* Alerts Table */}
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         <table className="w-full">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Symbol</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Condition</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Target Price</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Symbol
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Condition
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Target Price
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Status
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Created
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Actions
+              </th>
             </tr>
           </thead>
+
           <tbody className="bg-white divide-y divide-gray-200">
             {alerts.map((alert) => (
               <tr key={alert.id}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{alert.symbol}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{alert.condition}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${alert.threshold_value}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  {alert.symbol}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {alert.condition}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  ${alert.threshold_value}
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   <span
                     className={`px-2 py-1 text-xs rounded ${
-                      alert.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      alert.is_active
+                        ? "bg-green-100 text-green-800"
+                        : "bg-red-100 text-red-800"
                     }`}
                   >
-                    {alert.is_active ? 'Active' : 'Triggered'}
+                    {alert.is_active ? "Active" : "Triggered"}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

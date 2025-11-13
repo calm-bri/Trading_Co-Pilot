@@ -7,9 +7,9 @@ class Settings(BaseSettings):
 
     # Security
     secret_key: str
-
+    finnhub_api_key: str
     algorithm: str = "HS256"
-
+     
     access_token_expire_minutes: int = 30
 
     # CORS
@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     alpha_vantage_api_key: str = ""
     twitter_api_key: str = ""
     gemini_api_key: str = ""
+    
+
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
