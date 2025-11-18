@@ -8,10 +8,7 @@ const Analytics = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // ---- Symbol Chart States ----
-  const [selectedSymbol, setSelectedSymbol] = useState("AAPL");
-  const [symbolSeries, setSymbolSeries] = useState([]);
-  const [symbolLoading, setSymbolLoading] = useState(false);
+
 
   // ---- Fetch Summary + Risk Metrics ----
   const fetchAll = useCallback(async () => {
@@ -48,48 +45,14 @@ const Analytics = () => {
     }
   }, []);
 
-  // ---- Fetch Symbol Series ----
-  const fetchSymbolData = async () => {
-    const token = localStorage.getItem("token");
 
-    if (!token) {
-      console.log("❌ No token found. Skipping symbol request.");
-      return;
-    }
-
-    if (!selectedSymbol) return;
-
-    setSymbolLoading(true);
-    try {
-      const res = await api.get(`/analytics/series/${selectedSymbol}`);
-      console.log("🔥 SERIES:", res.data);
-      setSymbolSeries(res.data.series || []);
-    } catch (err) {
-      console.log("❌ SERIES ERROR:", err.response?.data || err.message);
-      setSymbolSeries([]);
-    }
-    setSymbolLoading(false);
-  };
 
   // ---- INITIAL PAGE LOAD ----
   useEffect(() => {
     fetchAll();
   }, [fetchAll]);
 
-  // ---- Load Symbol Chart AFTER token is available ----
-  useEffect(() => {
-    const token = localStorage.getItem("token");
 
-    if (!token) {
-      console.log("Token not ready yet.");
-      return;
-    }
-
-    // slight delay ensures axios interceptor loads
-    setTimeout(() => {
-      fetchSymbolData();
-    }, 300);
-  }, []);
 
   const formatCurrency = (n) => {
     if (n === null || n === undefined || Number.isNaN(n)) return "--";
@@ -227,52 +190,7 @@ const Analytics = () => {
           )}
         </div>
 
-        {/* Symbol Chart */}
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-lg font-semibold mb-3">Price Chart</h3>
 
-          <div className="flex items-center gap-3 mb-4">
-            <input
-              type="text"
-              value={selectedSymbol}
-              onChange={(e) => setSelectedSymbol(e.target.value.toUpperCase())}
-              placeholder="AAPL, TSLA, BTC, NIFTY"
-              className="border px-3 py-2 rounded w-40"
-            />
-            <button
-              onClick={fetchSymbolData}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-            >
-              Load
-            </button>
-          </div>
-
-          {symbolLoading ? (
-            <p>Loading chart...</p>
-          ) : symbolSeries.length === 0 ? (
-            <p>Enter symbol and click Load.</p>
-          ) : (
-            <Plot
-              data={[
-                {
-                  x: symbolSeries.map((d) => d.date),
-                  open: symbolSeries.map((d) => d.open),
-                  high: symbolSeries.map((d) => d.high),
-                  low: symbolSeries.map((d) => d.low),
-                  close: symbolSeries.map((d) => d.close),
-                  type: "candlestick",
-                },
-              ]}
-              layout={{
-                height: 350,
-                margin: { t: 40, r: 40, b: 40, l: 50 },
-                xaxis: { title: "Date" },
-                yaxis: { title: "Price" },
-              }}
-              style={{ width: "100%" }}
-            />
-          )}
-        </div>
       </div>
     </div>
   );

@@ -7,7 +7,7 @@ class Settings(BaseSettings):
 
     # Security
     secret_key: str
-    finnhub_api_key: str
+    FINNHUB_API_KEY: str
     algorithm: str = "HS256"
      
     access_token_expire_minutes: int = 30

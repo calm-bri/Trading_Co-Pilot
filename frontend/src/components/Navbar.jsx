@@ -25,6 +25,7 @@ const Navbar = () => {
                 <Link to="/dashboard" className="hover:text-blue-200">Dashboard</Link>
                 <Link to="/journal" className="hover:text-blue-200">Journal</Link>
                 <Link to="/analytics" className="hover:text-blue-200">Analytics</Link>
+                <Link to="/charts" className="hover:text-blue-200">Charts</Link>
                 <Link to="/alerts" className="hover:text-blue-200">Alerts</Link>
                 <Link to="/sentiment" className="hover:text-blue-200">Sentiment</Link>
                 <button onClick={handleLogout} className="hover:text-blue-200">

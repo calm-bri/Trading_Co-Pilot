@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+import traceback
 from typing import Dict, List
 from app.core.database import get_db
 from app.core.security import get_current_user
@@ -7,16 +8,18 @@ from app.models import User, Trade
 from app.services.technical_analysis import TechnicalAnalysis
 from app.services.risk_management import RiskManagement
 from app.services.data_fetcher import DataFetcher
-from app.core.config import settings
 
 router = APIRouter()
 
+
+# -------------------------------------------------------------------
+# PORTFOLIO SUMMARY
+# -------------------------------------------------------------------
 @router.get("/summary")
 async def get_portfolio_summary(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Get portfolio summary with performance metrics."""
     trades = db.query(Trade).filter(Trade.user_id == current_user.id).all()
 
     if not trades:
@@ -28,38 +31,30 @@ async def get_portfolio_summary(
             "sharpe_ratio": 0
         }
 
-    # Calculate basic metrics
-    total_trades = len(trades)
     total_value = sum(trade.quantity * trade.price for trade in trades)
+    total_trades = len(trades)
 
-    # Calculate P&L (simplified - assuming all trades are closed)
     pnl = 0
     winning_trades = 0
 
-    # Group trades by symbol for analysis
     symbol_trades = {}
     for trade in trades:
-        if trade.symbol not in symbol_trades:
-            symbol_trades[trade.symbol] = []
-        symbol_trades[trade.symbol].append(trade)
+        symbol_trades.setdefault(trade.symbol, []).append(trade)
 
-    # Calculate performance metrics
-    for symbol, symbol_trades_list in symbol_trades.items():
-        # Simple P&L calculation (buy low, sell high)
-        buys = [t for t in symbol_trades_list if t.trade_type == 'buy']
-        sells = [t for t in symbol_trades_list if t.trade_type == 'sell']
+    for symbol, s_trades in symbol_trades.items():
+        buys = [t for t in s_trades if t.trade_type == "buy"]
+        sells = [t for t in s_trades if t.trade_type == "sell"]
 
         if buys and sells:
-            avg_buy_price = sum(t.price for t in buys) / len(buys)
-            avg_sell_price = sum(t.price for t in sells) / len(sells)
-            symbol_pnl = (avg_sell_price - avg_buy_price) * min(sum(t.quantity for t in buys), sum(t.quantity for t in sells))
+            avg_buy = sum(t.price for t in buys) / len(buys)
+            avg_sell = sum(t.price for t in sells) / len(sells)
+            qty = min(sum(t.quantity for t in buys), sum(t.quantity for t in sells))
+            symbol_pnl = (avg_sell - avg_buy) * qty
             pnl += symbol_pnl
             if symbol_pnl > 0:
                 winning_trades += 1
 
     win_rate = (winning_trades / len(symbol_trades)) * 100 if symbol_trades else 0
-
-    # Calculate Sharpe ratio (simplified)
     sharpe_ratio = pnl / total_value if total_value > 0 else 0
 
     return {
@@ -70,89 +65,151 @@ async def get_portfolio_summary(
         "sharpe_ratio": round(sharpe_ratio, 4)
     }
 
+
+# -------------------------------------------------------------------
+# TECHNICAL ANALYSIS
+# -------------------------------------------------------------------
 @router.get("/technical/{symbol}")
 async def get_technical_analysis(
     symbol: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Get technical analysis for a symbol."""
+    """
+    Get technical indicators using Finnhub OHLC data.
+    """
     try:
-        data_fetcher = DataFetcher()
-        technical_analysis = TechnicalAnalysis()
+        fetcher = DataFetcher()
+        ta = TechnicalAnalysis()
+        
+        #cleaner symbols
+        symbol = symbol.upper().strip()
 
-        # Fetch historical data
-        data = await data_fetcher.get_historical_data(symbol)
 
-        if data.empty:
-            raise HTTPException(status_code=404, detail="No data available for symbol")
+        df = await fetcher.get_ohlcv_series(symbol, resolution="D", days=30)
 
-        # Calculate indicators
-        indicators = technical_analysis.calculate_indicators(data)
 
+        # FIX: df.empty is unreliable → use len(df)
+        if df is None or len(df) == 0:
+            print("⚠ TECH: DF EMPTY OR NONE")
+            raise HTTPException(status_code=404, detail="No OHLC data available.")
+
+
+        # Rename columns to match TechnicalAnalysis expectations
+        df = df.rename(columns={
+            "open": "Open",
+            "high": "High",
+            "low": "Low",
+            "close": "Close",
+            "volume": "Volume",
+            "date": "Date",
+        })
+
+        df["Date"] = df["Date"].astype(str)
+
+        # Check required columns
+        for col in ["Open", "High", "Low", "Close"]:
+            if col not in df.columns:
+                raise Exception(f"Missing column: {col}")
+
+        # Minimum candles required
+        if len(df) < 50:
+            raise Exception("Not enough OHLC data (need 50+ candles)")
+
+        indicators = ta.calculate_indicators(df)
+
+        # Return full arrays for frontend to use
         return {
             "symbol": symbol,
-            "indicators": indicators,
-            "latest": {
-                "rsi": indicators['rsi'].iloc[-1] if not indicators['rsi'].empty else None,
-                "macd": indicators['macd'].iloc[-1] if not indicators['macd'].empty else None,
-                "macd_signal": indicators['macd_signal'].iloc[-1] if not indicators['macd_signal'].empty else None,
-                "bollinger_upper": indicators['bollinger_upper'].iloc[-1] if not indicators['bollinger_upper'].empty else None,
-                "bollinger_lower": indicators['bollinger_lower'].iloc[-1] if not indicators['bollinger_lower'].empty else None,
+            "indicators": {
+                "date": indicators["Date"].tolist(),
+                "rsi": indicators["rsi"].tolist(),
+                "macd": indicators["macd"].tolist(),
+                "macd_signal": indicators["macd_signal"].tolist(),
+                "bollinger_upper": indicators["bollinger_upper"].tolist(),
+                "bollinger_lower": indicators["bollinger_lower"].tolist(),
+                "sma": indicators.get("sma", []).tolist() if "sma" in indicators else [],
+                "ema": indicators.get("ema", []).tolist() if "ema" in indicators else [],
             }
         }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error fetching technical analysis: {str(e)}")
 
+    except Exception:
+        import traceback
+        print("\n\n❌ TECHNICAL / TRACEBACK ❌")
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail="Technical indicator calculation failed."
+        )
+
+
+# -------------------------------------------------------------------
+# RISK METRICS
+# -------------------------------------------------------------------
 @router.get("/risk-metrics")
 async def get_risk_metrics(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Get risk metrics for the portfolio."""
-    trades = db.query(Trade).filter(Trade.user_id == current_user.id).all()
+    try:
+        trades = db.query(Trade).filter(Trade.user_id == current_user.id).all()
 
-    if not trades:
+        if not trades:
+            return {
+                "max_drawdown": 0,
+                "sharpe_ratio": 0,
+                "volatility": 0,
+                "var_95": 0
+            }
+
+        # Simple risk calculations
+        pnls = []
+        cumulative = 0
+        peak = 0
+        max_drawdown = 0
+
+        for trade in trades:
+            pnl = trade.quantity * trade.price * (1 if trade.trade_type == "sell" else -1)
+            cumulative += pnl
+            pnls.append(cumulative)
+
+            if cumulative > peak:
+                peak = cumulative
+            drawdown = peak - cumulative
+            if drawdown > max_drawdown:
+                max_drawdown = drawdown
+
+        volatility = sum(p**2 for p in pnls) / len(pnls) if pnls else 0
+        sharpe_ratio = sum(pnls) / len(pnls) / volatility if volatility > 0 else 0
+        var_95 = sorted(pnls)[int(len(pnls) * 0.05)] if pnls else 0
+
         return {
-            "max_drawdown": 0,
-            "sharpe_ratio": 0,
-            "volatility": 0,
-            "var_95": 0
+            "max_drawdown": round(max_drawdown, 2),
+            "sharpe_ratio": round(sharpe_ratio, 4),
+            "volatility": round(volatility, 4),
+            "var_95": round(var_95, 2)
         }
 
-    # Extract returns from trades (simplified)
-    returns = []
-    for trade in trades:
-        # Simplified return calculation
-        if trade.trade_type == 'sell':
-            returns.append(trade.price * trade.quantity)
+    except Exception as e:
+        print("❌ RISK METRICS ERROR:", e)
+        raise HTTPException(status_code=500, detail="Risk metrics calculation failed.")
 
-    risk_manager = RiskManagement()
-    metrics = risk_manager.calculate_risk_metrics(returns)
 
-    return {
-        "max_drawdown": round(metrics.get('max_drawdown', 0), 4),
-        "sharpe_ratio": round(metrics.get('sharpe_ratio', 0), 4),
-        "volatility": round(metrics.get('volatility', 0), 4),
-        "var_95": round(metrics.get('var_95', 0), 4)
-    }
-
+# -------------------------------------------------------------------
+# OHLCV SERIES
+# -------------------------------------------------------------------
 @router.get("/series/{symbol}")
 async def get_candle_series(
     symbol: str,
+    resolution: str = "D",
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """
-    Returns OHLCV time-series for Plotly candlestick charts.
-    Works with Yahoo Finance DataFetcher.
-    """
-    fetcher = DataFetcher()
-
     try:
-        df = await fetcher.get_historical_data(symbol)
+        fetcher = DataFetcher()
+        df = await fetcher. get_ohlcv_series(symbol)
 
-        if df.empty:
+        if df is None or df.empty:
             return {"symbol": symbol, "series": []}
 
         df["date"] = df["date"].astype(str)
@@ -172,8 +229,5 @@ async def get_candle_series(
         return {"symbol": symbol, "series": series}
 
     except Exception as e:
-        print("❌ ERROR in /series:", e)
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error fetching OHLCV series: {str(e)}"
-        )
+        print("❌ ERROR /series:", e)
+        raise HTTPException(status_code=500, detail=f"Error fetching OHLCV series: {str(e)}")

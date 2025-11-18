@@ -79,6 +79,46 @@ class TechnicalAnalysis:
             return []
         return pd.Series(prices).ewm(span=period).mean().tolist()
 
+    def calculate_indicators(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Calculate all technical indicators and return DataFrame with indicators.
+        """
+        if df.empty or len(df) < 50:
+            return pd.DataFrame()
+
+        # Ensure we have the required columns
+        required_cols = ["Open", "High", "Low", "Close", "Volume", "Date"]
+        for col in required_cols:
+            if col not in df.columns:
+                raise ValueError(f"Missing required column: {col}")
+
+        # Convert to numeric if needed
+        for col in ["Open", "High", "Low", "Close", "Volume"]:
+            df[col] = pd.to_numeric(df[col], errors='coerce')
+
+        # Calculate indicators
+        close_prices = df["Close"].tolist()
+
+        # RSI
+        rsi_values = self.calculate_rsi(close_prices)
+        df["rsi"] = [np.nan] * (len(df) - len(rsi_values)) + rsi_values
+
+        # MACD
+        macd_data = self.calculate_macd(close_prices)
+        df["macd"] = [np.nan] * (len(df) - len(macd_data["macd"])) + macd_data["macd"]
+        df["macd_signal"] = [np.nan] * (len(df) - len(macd_data["signal"])) + macd_data["signal"]
+
+        # Bollinger Bands
+        bb_data = self.calculate_bollinger_bands(close_prices)
+        df["bollinger_upper"] = [np.nan] * (len(df) - len(bb_data["upper"])) + bb_data["upper"]
+        df["bollinger_lower"] = [np.nan] * (len(df) - len(bb_data["lower"])) + bb_data["lower"]
+
+        # Moving Averages
+        df["sma"] = pd.Series(close_prices).rolling(window=20).mean()
+        df["ema"] = self.calculate_ema(close_prices, 20)
+
+        return df
+
     def analyze_stock(self, prices: List[float]) -> Dict[str, Any]:
         return {
             "rsi": self.calculate_rsi(prices),
