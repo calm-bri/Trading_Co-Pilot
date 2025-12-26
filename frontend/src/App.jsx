@@ -6,6 +6,8 @@ import ChartsPanel from './pages/ChartsPanel';
 import TradeJournal from './components/TradeJournal';
 import AlertsPanel from './components/AlertsPanel';
 import SentimentFeed from './components/SentimentFeed';
+import Chatbot from './components/Chatbot';
+import Copilot from "./pages/Copilot";
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -28,6 +30,7 @@ function App() {
               <Route path="/journal" element={<TradeJournal />} />
               <Route path="/analytics" element={<Analytics />} />
               <Route path="/alerts" element={<AlertsPanel />} />
+              <Route path="/copilot" element={<Copilot />} />
               <Route path="/sentiment" element={<SentimentFeed />} />
             </Routes>
           </main>

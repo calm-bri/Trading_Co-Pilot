@@ -7,9 +7,10 @@ class Settings(BaseSettings):
 
     # Security
     secret_key: str
+    GEMINI_API_KEY: str
     FINNHUB_API_KEY: str
     algorithm: str = "HS256"
-     
+
     access_token_expire_minutes: int = 30
 
     # CORS
@@ -22,7 +23,6 @@ class Settings(BaseSettings):
     yahoo_finance_api_key: str = ""
     alpha_vantage_api_key: str = ""
     twitter_api_key: str = ""
-    gemini_api_key: str = ""
     
 
 

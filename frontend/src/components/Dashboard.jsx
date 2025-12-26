@@ -17,7 +17,7 @@ const Dashboard = () => {
       const [tradesRes, alertsRes, sentimentRes] = await Promise.all([
         api.get('/trades/'),
         api.get('/alerts/active'),
-        api.get('/sentiment/latest')
+        // api.get('/sentiment/latest')
       ]);
       setTrades(tradesRes.data);
       setAlerts(alertsRes.data);

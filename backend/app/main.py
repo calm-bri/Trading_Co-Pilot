@@ -29,22 +29,6 @@ async def log_requests(request: Request, call_next):
     logger.info("Request completed", status_code=response.status_code)
     return response
 
-# @app.middleware("http")
-# async def log_requests(request, call_next):
-#     try:
-#         response = await call_next(request)
-#         return response
-#     except Exception as e:
-#         print("\n🔥🔥🔥 BACKEND ERROR 🔥🔥🔥")
-#         print("URL:", request.url)
-#         print("ERROR TYPE:", type(e))
-#         print("ERROR:", e)
-#         raise e
-  
-
-
-
-
 
 # Include routers
 app.include_router(users, prefix="/api/auth", tags=["Authentication"])

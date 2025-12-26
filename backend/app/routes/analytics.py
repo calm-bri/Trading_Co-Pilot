@@ -86,7 +86,7 @@ async def get_technical_analysis(
         symbol = symbol.upper().strip()
 
 
-        df = await fetcher.get_ohlcv_series(symbol, resolution="D", days=30)
+        df = await fetcher.get_ohlcv_series(symbol, resolution="D", days=90)
 
 
         # FIX: df.empty is unreliable → use len(df)

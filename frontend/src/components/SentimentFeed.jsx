@@ -13,7 +13,12 @@ const SentimentFeed = () => {
   const fetchSentiment = async () => {
     try {
       const response = await api.get('/sentiment/latest');
-      setSentimentData(response.data);
+      const data = response.data;
+
+      // Wrap single object into array
+      setSentimentData(response.data.data || []);
+
+
     } catch (error) {
       console.error('Failed to fetch sentiment data:', error);
     } finally {
@@ -73,18 +78,17 @@ const SentimentFeed = () => {
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <span className="font-medium">Current Sentiment:</span>
-                <span className={`px-3 py-1 rounded text-sm font-medium ${
-                  sentimentData[sentimentData.length - 1]?.sentiment_score > 0.1
+                <span className={`px-3 py-1 rounded text-sm font-medium ${sentimentData[sentimentData.length - 1]?.sentiment_score > 0.1
                     ? 'bg-green-100 text-green-800'
                     : sentimentData[sentimentData.length - 1]?.sentiment_score < -0.1
-                    ? 'bg-red-100 text-red-800'
-                    : 'bg-yellow-100 text-yellow-800'
-                }`}>
+                      ? 'bg-red-100 text-red-800'
+                      : 'bg-yellow-100 text-yellow-800'
+                  }`}>
                   {sentimentData[sentimentData.length - 1]?.sentiment_score > 0.1
                     ? 'Positive'
                     : sentimentData[sentimentData.length - 1]?.sentiment_score < -0.1
-                    ? 'Negative'
-                    : 'Neutral'}
+                      ? 'Negative'
+                      : 'Neutral'}
                 </span>
               </div>
               <div className="flex justify-between items-center">
@@ -126,13 +130,12 @@ const SentimentFeed = () => {
                     </div>
                   </div>
                   <div className="ml-4">
-                    <span className={`px-2 py-1 text-xs rounded ${
-                      item.sentiment_score > 0.1 ? 'bg-green-100 text-green-800' :
-                      item.sentiment_score < -0.1 ? 'bg-red-100 text-red-800' :
-                      'bg-yellow-100 text-yellow-800'
-                    }`}>
+                    <span className={`px-2 py-1 text-xs rounded ${item.sentiment_score > 0.1 ? 'bg-green-100 text-green-800' :
+                        item.sentiment_score < -0.1 ? 'bg-red-100 text-red-800' :
+                          'bg-yellow-100 text-yellow-800'
+                      }`}>
                       {item.sentiment_score > 0.1 ? 'Positive' :
-                       item.sentiment_score < -0.1 ? 'Negative' : 'Neutral'}
+                        item.sentiment_score < -0.1 ? 'Negative' : 'Neutral'}
                     </span>
                   </div>
                 </div>

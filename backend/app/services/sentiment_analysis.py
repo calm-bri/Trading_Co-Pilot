@@ -1,60 +1,68 @@
-import torch
-from transformers import pipeline
-from typing import Dict, Any, List
-import asyncio
+from typing import Dict, Any, List, Optional
+from datetime import datetime, timezone
 import structlog
+import httpx
+import asyncio
+import json
+
+logger = structlog.get_logger()
 
 class SentimentAnalysis:
-    def __init__(self):
-        # Load pre-trained sentiment analysis model
-        try:
-            self.sentiment_pipeline = pipeline("sentiment-analysis")
-        except Exception as e:
-            # Fallback if model loading fails
-            self.sentiment_pipeline = None
-            logger = structlog.get_logger()
-            logger.warning("Sentiment analysis model failed to load", error=str(e))
+    def __init__(self, gemini_api_key: str):
+        self.api_key = gemini_api_key
+        self.base_url = "https://generativelanguage.googleapis.com/v1/models"
+        self.model = "gemini-1.5-flash" # Default to flash for speed
 
-    async def analyze_text(self, text: str) -> Dict[str, Any]:
-        if not self.sentiment_pipeline:
-            return {"label": "NEUTRAL", "score": 0.5, "sentiment": "neutral"}
-        result = self.sentiment_pipeline(text)[0]
+    async def analyze_rss_articles(self, articles: List[Dict], symbol: Optional[str] = None, max_articles: int = 10) -> Dict[str, Any]:
+        """Analyzes multiple articles concurrently without blocking."""
+        if not articles:
+            return self._fallback_sentiment()
+
+        # Limit to the most recent articles
+        sample = articles[:max_articles]
+        
+        # Create tasks for parallel execution
+        tasks = [self._analyze_single_article(art, symbol) for art in sample]
+        
+        # ✅ FIX: Properly await the results
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        
+        # Filter out failed analyses
+        valid_results = [r for r in results if isinstance(r, dict) and "score" in r]
+        
+        if not valid_results:
+            return self._fallback_sentiment()
+
+        # Calculate average score
+        avg_score = sum(r["score"] for r in valid_results) / len(valid_results)
+        
         return {
-            "label": result["label"],
-            "score": result["score"],
-            "sentiment": "positive" if result["label"] == "POSITIVE" else "negative",
+            "score": avg_score,
+            "sentiment": "bullish" if avg_score > 0.1 else "bearish" if avg_score < -0.1 else "neutral",
+            "confidence": 0.8,
+            "article_count": len(valid_results),
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
-    async def analyze_texts_batch(self, texts: List[str]) -> List[Dict[str, Any]]:
-        if not self.sentiment_pipeline:
-            return [{"label": "NEUTRAL", "score": 0.5, "sentiment": "neutral"} for _ in texts]
-        results = self.sentiment_pipeline(texts)
-        return [
-            {
-                "label": result["label"],
-                "score": result["score"],
-                "sentiment": "positive" if result["label"] == "POSITIVE" else "negative",
-            }
-            for result in results
-        ]
-
-    async def calculate_overall_sentiment(self, texts: List[str]) -> Dict[str, Any]:
-        if not texts:
-            return {"overall_sentiment": "neutral", "average_score": 0.5, "positive_ratio": 0.5}
-
-        results = await self.analyze_texts_batch(texts)
-
-        positive_count = sum(1 for r in results if r["sentiment"] == "positive")
-        total_score = sum(r["score"] for r in results)
-        average_score = total_score / len(results)
-
-        overall_sentiment = "positive" if average_score > 0.6 else "negative" if average_score < 0.4 else "neutral"
-
-        return {
-            "overall_sentiment": overall_sentiment,
-            "average_score": average_score,
-            "positive_ratio": positive_count / len(results),
-            "analysis_count": len(results),
+    async def _analyze_single_article(self, article: Dict, symbol: str = None) -> Dict:
+        """Call Gemini for a single article."""
+        prompt = f"Analyze financial sentiment for {symbol or 'market'}: {article.get('title')}"
+        url = f"{self.base_url}/{self.model}:generateContent?key={self.api_key}"
+        
+        payload = {
+            "contents": [{"parts": [{"text": prompt}]}],
+            "generationConfig": {"response_mime_type": "application/json"}
         }
 
-sentiment_analysis = SentimentAnalysis()
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.post(url, json=payload, timeout=10.0)
+                if response.status_code == 200:
+                    raw_text = response.json()["candidates"][0]["content"]["parts"][0]["text"]
+                    return json.loads(raw_text)
+            except Exception as e:
+                logger.error(f"Gemini call failed: {e}")
+            return {"score": 0, "sentiment": "neutral"}
+
+    def _fallback_sentiment(self):
+        return {"score": 0, "sentiment": "neutral", "confidence": 0, "article_count": 0, "timestamp": datetime.now(timezone.utc).isoformat()}

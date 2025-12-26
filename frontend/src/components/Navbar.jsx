@@ -28,6 +28,7 @@ const Navbar = () => {
                 <Link to="/charts" className="hover:text-blue-200">Charts</Link>
                 <Link to="/alerts" className="hover:text-blue-200">Alerts</Link>
                 <Link to="/sentiment" className="hover:text-blue-200">Sentiment</Link>
+                <Link to="/copilot">🤖 Copilot</Link>
                 <button onClick={handleLogout} className="hover:text-blue-200">
                   Logout
                 </button>
